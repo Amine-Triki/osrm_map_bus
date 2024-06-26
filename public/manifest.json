@@ -1,0 +1,17 @@
+{
+    "name": "Laravel osrm_map_bus",
+    "short_name": "map_bus",
+    "start_url": "/showMap",
+    "background_color": "#6777ef",
+    "description": "Tutorial of Laravel osrm_map_bus",
+    "display": "fullscreen",
+    "theme_color": "#6777ef",
+    "icons": [
+        {
+            "src": "logo.PNG",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
