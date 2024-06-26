@@ -95,6 +95,80 @@ function getDistance($id)
 }
 
 
+
+
+// Update distance
+public function updateDistance(Request $request, $id)
+{
+    $distanceRecord = Distance::find($id);
+    if (!$distanceRecord) {
+        return response()->json(['errors' => 'Distance not found.'], 404);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'points' => 'required|array',
+        'coordinates' => 'required|array',
+        'line_name' => 'required|string',
+
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $points = $request->input('points');
+    $line_name = $request->input('line_name');
+    $coordinates = $request->input('coordinates');
+
+    if (count($coordinates) < 2) {
+        return response()->json(['error' => 'You must provide at least two points'], 400);
+    }
+
+    $coordinateStrings = array_map(function($coord) {
+        return "{$coord[0]},{$coord[1]}";
+    }, $coordinates);
+
+    $coordinateString = implode(';', $coordinateStrings);
+
+    $url = "http://router.project-osrm.org/route/v1/driving/{$coordinateString}?overview=full&geometries=geojson";
+
+    try {
+        $response = Http::get($url);
+
+        if ($response->failed()) {
+            throw new \Exception('Failed to connect to OSRM service');
+        }
+
+        $data = $response->json();
+
+        if (!isset($data['routes']) || count($data['routes']) === 0) {
+            return response()->json(['error' => 'The path cannot be calculated for these points'], 400);
+        }
+
+        $route = $data['routes'][0];
+        $distance = $route['distance'] / 1000; // Distance in kilometers
+        $geometry = $route['geometry']; // GeoJSON geometry
+
+        $distanceRecord ->update([
+            'line_name' => $line_name,
+            'points' => json_encode($points),
+            'coordinates' => json_encode($coordinates),
+            'distance' => $distance,
+            'geometry' => json_encode($geometry),
+        ]);
+
+        return response()->json(['status' => 'Data updated successfully.', 'distance' => $distanceRecord], 201);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'An error occurred while calculating the distance: ' . $e->getMessage()], 500);
+    }
+}
+
+
+
+
+
+
+
 // Delete a space
 function deleteDistance($id)
 {
